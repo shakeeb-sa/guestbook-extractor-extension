@@ -273,12 +273,36 @@ function startExtractionProcess(blacklistEnabled, exclusionList) {
         const fullObj = new URL(url);
         let host = fullObj.hostname.replace(/^www\./, "").toLowerCase();
 
+        // 1. Check Web 2.0 Blacklist (The basic known ones)
         const isBlacklisted = BLACKLIST.some((blocked) =>
           host.endsWith(blocked)
         );
+
+        // 2. Check Excel Exclusion List
         const isExcluded = EXCLUSION_SET.has(host);
 
-        if (!isBlacklisted && !isExcluded && !finalDomains.has(host)) {
+        // 3. Check for Root/Naked Domains (Spam Filter)
+        const isRootDomain =
+          (fullObj.pathname === "/" || fullObj.pathname === "") &&
+          fullObj.search === "";
+
+        // 4. AUTOMATIC SPAM FARM DETECTION (The New Logic)
+        // Logic: If the domain has 3+ parts (subdomain.name.com) AND contains "blog"
+        // Example: "nikita.blog-gold.com" -> Parts: 3, Contains "blog" -> BANNED.
+        const domainParts = host.split(".");
+        const hasSubdomain = domainParts.length > 2;
+        const containsSpamKeyword = host.includes("blog");
+
+        const isSpamFarm = hasSubdomain && containsSpamKeyword;
+
+        // 5. Final Gatekeeper
+        if (
+          !isBlacklisted &&
+          !isExcluded &&
+          !isRootDomain &&
+          !isSpamFarm &&
+          !finalDomains.has(host)
+        ) {
           finalDomains.set(host, url);
         }
       } catch (e) {}
