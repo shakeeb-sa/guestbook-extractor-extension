@@ -55,6 +55,12 @@ document.getElementById("run").addEventListener("click", async () => {
   const blacklistEnabled = document.getElementById("blacklistToggle").checked;
   const mergeEnabled = document.getElementById("mergeToggle").checked;
 
+  // FIX 1: Safety Check for Popup Closure
+  if (mergeEnabled && Object.keys(masterSheetData).length === 0) {
+    alert("❌ Merge Data Missing!\n\nIf you closed this popup window after uploading, the file was lost from memory.\n\nPlease re-upload the Master Sheet before running.");
+    return;
+  }
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   await chrome.scripting.executeScript({
@@ -62,7 +68,6 @@ document.getElementById("run").addEventListener("click", async () => {
     files: ["xlsx.full.min.js"],
   });
 
-  // If Merge is OFF, we pass an empty object for masterData
   const dataToPass = mergeEnabled ? masterSheetData : {};
 
   chrome.scripting.executeScript({
@@ -103,64 +108,24 @@ function startExtractionProcess(
   // Intelligence Buckets
   const CATEGORIES = {
     Profiles: [
-      "/profile/",
-      "/user/",
-      "/u/",
-      "/member/",
-      "/members/",
-      "/candidate/",
-      "/author/",
-      "/people/",
-      "/users/",
-      "/profiles/",
-      "/@/",
+      "/profile/", "/user/", "/u/", "/member/", "/members/", "/candidate/", 
+      "/author/", "/people/", "/users/", "/profiles/", "/@/",
     ],
     Discussions: [
-      "/forum/",
-      "/forums/",
-      "/topic/",
-      "/thread/",
-      "/discuss/",
-      "/discussions/",
-      "/question/",
-      "/issues/",
-      "/group/",
-      "/groups/",
-      "/community/",
-      "/board/",
-      "/viewtopic",
-      "mysite-200-group",
-      "/guestbook.html",
-      "/mn.co/posts/",
+      "/forum/", "/forums/", "/topic/", "/thread/", "/discuss/", "/discussions/", 
+      "/question/", "/issues/", "/group/", "/groups/", "/community/", "/board/", 
+      "/viewtopic", "mysite-200-group", "/guestbook.html", "/mn.co/posts/",
     ],
     Business: [
-      "/company/",
-      "/companies/",
-      "/employer/",
-      "/employers/",
-      "/listing/",
-      "/classifieds/",
-      "/ads/",
-      "/services/",
+      "/company/", "/companies/", "/employer/", "/employers/", "/listing/", 
+      "/classifieds/", "/ads/", "/services/",
     ],
     Content: [
-      "/blog/",
-      "/blogs/",
-      "/read-blog/",
-      "/post/",
-      "/posts/",
-      "/p/",
-      "/page/",
-      "/webpage/",
-      "/wiki/",
-      "/media/",
+      "/blog/", "/blogs/", "/read-blog/", "/post/", "/posts/", "/p/", "/page/", 
+      "/webpage/", "/wiki/", "/media/",
     ],
     Projects: [
-      "/snippets/",
-      "/projects",
-      "/idea/",
-      "/ideas/",
-      "/-/projects",
+      "/snippets/", "/projects", "/idea/", "/ideas/", "/-/projects", 
       "?tab=field_core_pfield",
     ],
     Other: [],
@@ -168,53 +133,28 @@ function startExtractionProcess(
 
   const BLACKLIST = blacklistEnabled
     ? [
-        "carrd.co",
-        "10web.site",
-        "google.com",
-        "wordpress.com",
-        "zendesk.com",
-        "livejournal.com",
-        "mystrikingly.com",
-        "bandcamp.com",
-        "about.me",
-        "gumroad.com",
-        "webflow.io",
-        "blogspot.com",
-        "linktr.ee",
-        "wix.com",
-        "weebly.com",
-        "squarespace.com",
-        "tumblr.com",
-        "facebook.com",
-        "twitter.com",
-        "instagram.com",
-        "linkedin.com",
-        "youtube.com",
+        "carrd.co", "10web.site", "google.com", "wordpress.com", "zendesk.com",
+        "livejournal.com", "mystrikingly.com", "bandcamp.com", "about.me",
+        "gumroad.com", "webflow.io", "blogspot.com", "linktr.ee", "wix.com",
+        "weebly.com", "squarespace.com", "tumblr.com", "facebook.com",
+        "twitter.com", "instagram.com", "linkedin.com", "youtube.com",
         "mobirisesite.com",
       ]
     : [];
 
-  // --- UI SETUP (No changes here) ---
+  // --- UI SETUP (Preserved exactly as requested) ---
   const overlay = document.createElement("div");
   overlay.id = "__gbOverlay";
   Object.assign(overlay.style, {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    width: "300px",
-    background: "rgba(0,0,0,0.9)",
-    color: "#fff",
-    padding: "15px",
-    zIndex: "10000",
-    borderRadius: "8px",
-    fontFamily: "Arial, sans-serif",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-    transition: "all 0.3s",
+    position: "fixed", bottom: "20px", right: "20px", width: "300px",
+    background: "rgba(0,0,0,0.9)", color: "#fff", padding: "15px",
+    zIndex: "10000", borderRadius: "8px", fontFamily: "Arial, sans-serif",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.5)", transition: "all 0.3s",
   });
 
   overlay.innerHTML = `
     <div style="font-weight:bold; font-size:16px; margin-bottom:10px; border-bottom:1px solid #444; padding-bottom:5px;">
-      Guestbook Snowball v2.2
+      Guestbook Snowball v2.3
     </div>
     <div id="__gbStatus" style="margin-bottom:10px; color:#aaa;">Initializing Probe...</div>
     <div id="__gbStats" style="font-size:13px; display:none;">
@@ -257,8 +197,7 @@ function startExtractionProcess(
     isAnalyzing = false;
     const remainingEstimate = Math.max(0, Math.ceil(totalEntries / batchSize));
 
-    document.getElementById("__gbTotal").textContent =
-      totalEntries.toLocaleString();
+    document.getElementById("__gbTotal").textContent = totalEntries.toLocaleString();
     document.getElementById("__gbEst").textContent = "~" + remainingEstimate;
     document.getElementById("__gbStats").style.display = "block";
     document.getElementById("__gbControls").style.display = "block";
@@ -282,10 +221,7 @@ function startExtractionProcess(
     const percent = Math.min(100, (currentEst / totalEntries) * 100);
     const bar = document.getElementById("__gbBar");
     if (bar) bar.style.width = percent + "%";
-    updateStatus(
-      `Clicks: ${window.__clickCounter} (Loaded ~${currentEst})`,
-      "#fff"
-    );
+    updateStatus(`Clicks: ${window.__clickCounter} (Loaded ~${currentEst})`, "#fff");
   }
 
   function clickButton() {
@@ -293,7 +229,7 @@ function startExtractionProcess(
 
     if (window.__guestbookStop) {
       updateStatus("Stopped. Categorizing...", "#d9534f");
-      processAndMerge();
+      setTimeout(processAndMerge, 100);
       return;
     }
 
@@ -304,10 +240,7 @@ function startExtractionProcess(
         updateProgress();
         setTimeout(clickButton, Math.floor(Math.random() * 1000) + 1500);
       } else {
-        setTimeout(() => {
-          if (isAnalyzing) {
-          }
-        }, 2000);
+        setTimeout(() => { if (isAnalyzing) {} }, 2000);
       }
     } else {
       updateStatus("Guestbook Finished!", "#00e676");
@@ -317,176 +250,197 @@ function startExtractionProcess(
     }
   }
 
-  // --- UPGRADED PROCESSING LOGIC ---
+  // --- PROCESSING LOGIC ---
   function processAndMerge() {
-    const links = Array.from(document.querySelectorAll('a[href^="http"]'));
-    const uniqueDomains = new Set();
+    try {
+      const links = Array.from(document.querySelectorAll('a[href^="http"]'));
+      const uniqueDomains = new Set();
 
-    const oldDataMap = {};
-    const newDataMap = {};
-    const statsMap = {};
+      // Data Structures
+      const oldDataMap = {};
+      const newDataMap = {};
+      
+      // Initialize structures
+      Object.keys(CATEGORIES).forEach((key) => {
+        oldDataMap[key] = [];
+        newDataMap[key] = [];
+      });
+      // Ensure "Other" exists
+      if (!oldDataMap["Other"]) oldDataMap["Other"] = [];
+      if (!newDataMap["Other"]) newDataMap["Other"] = [];
 
-    // Initialize structures
-    Object.keys(CATEGORIES).forEach((key) => {
-      oldDataMap[key] = [];
-      newDataMap[key] = [];
-      statsMap[key] = 0;
-    });
-    // Add Other bucket
-    oldDataMap["Other"] = [];
-    newDataMap["Other"] = [];
-    statsMap["Other"] = 0;
+      // 1. Load OLD Data (Master File) safely
+      if (masterSheetData && typeof masterSheetData === 'object' && Object.keys(masterSheetData).length > 0) {
+        for (const [sheetName, rows] of Object.entries(masterSheetData)) {
+          if(!Array.isArray(rows)) continue;
 
-    // 1. Load OLD Data (Master File) - PRESERVE ALL COLUMNS
-    if (masterSheetData && Object.keys(masterSheetData).length > 0) {
-      for (const [sheetName, rows] of Object.entries(masterSheetData)) {
-        // Filter out header row ("Domain") to get pure data
-        // We assume the first row is header if the first cell is "Domain"
-        const dataRows = rows.filter((r, index) => {
-          if (index === 0 && r[0] === "Domain") return false;
-          return true;
-        });
-
-        if (oldDataMap[sheetName] !== undefined) {
-          oldDataMap[sheetName] = dataRows;
-        } else {
-          oldDataMap[sheetName] = dataRows;
-        }
-      }
-    }
-
-    // 2. Process NEW Links
-    let totalNewLinks = 0;
-
-    links.forEach((a) => {
-      try {
-        const url = a.href.trim();
-        const fullObj = new URL(url);
-        let host = fullObj.hostname.replace(/^www\./, "").toLowerCase();
-        let path =
-          fullObj.pathname.toLowerCase() + fullObj.search.toLowerCase();
-
-        // Filters
-        if (BLACKLIST.some((blocked) => host.endsWith(blocked))) return;
-        if (EXCLUSION_SET.has(host)) return;
-        if (
-          (fullObj.pathname === "/" || fullObj.pathname === "") &&
-          fullObj.search === ""
-        )
-          return;
-        const domainParts = host.split(".");
-        if (domainParts.length > 2 && host.includes("blog")) return;
-        if (uniqueDomains.has(host)) return;
-
-        uniqueDomains.add(host);
-        totalNewLinks++;
-
-        // Categorization
-        let assigned = false;
-        let targetCat = "Other";
-
-        for (const [catName, patterns] of Object.entries(CATEGORIES)) {
-          if (patterns.some((p) => path.includes(p.toLowerCase()))) {
-            targetCat = catName;
-            assigned = true;
-            break;
+          // --- FIX: SKIP OLD REPORT SHEETS ---
+          // This prevents the old report from being dumped into "Other"
+          if (sheetName.toLowerCase().includes("report")) {
+            continue; 
           }
+
+          // Strip Header: Remove first row or row with "Domain"
+          const dataRows = rows.filter((r, index) => {
+            if (index === 0) return false; 
+            if (r[0] === "Domain") return false;
+            return true;
+          });
+
+          // Match Sheet Name to Category (Case Insensitive)
+          let targetKey = "Other";
+          const matchedCategory = Object.keys(CATEGORIES).find(
+            cat => cat.toLowerCase() === sheetName.toLowerCase()
+          );
+
+          if (matchedCategory) {
+            targetKey = matchedCategory;
+          }
+
+          // If mapping exists, add data. If not, dump in Other.
+          if (!oldDataMap[targetKey]) {
+             targetKey = "Other"; 
+          }
+          oldDataMap[targetKey] = oldDataMap[targetKey].concat(dataRows);
         }
-
-        // Add to NEW bucket with "New" flag in Column F (Index 5)
-        // Structure: [Domain, URL, Empty(DA), Empty(PA), Empty(SS), "New"]
-        newDataMap[targetCat].push([host, url, "", "", "", "New"]);
-        statsMap[targetCat]++;
-      } catch (e) {}
-    });
-
-    // --- EXCEL GENERATION ---
-    const workbook = XLSX.utils.book_new();
-
-    // -- FEATURE: Report Sheet --
-    const reportData = [
-      ["Run Report", new Date().toLocaleString()],
-      ["Total New Links", totalNewLinks],
-      ["", ""],
-      ["Category", "New Links Added"],
-    ];
-    Object.entries(statsMap).forEach(([cat, count]) => {
-      if (count > 0) reportData.push([cat, count]);
-    });
-    if (totalNewLinks > 0) {
-      const reportSheet = XLSX.utils.aoa_to_sheet(reportData);
-      // Set Report Column Widths too for niceness
-      reportSheet["!cols"] = [{ wch: 20 }, { wch: 20 }];
-      XLSX.utils.book_append_sheet(workbook, reportSheet, "Extraction Report");
-    }
-
-    // -- MERGING --
-    let hasData = false;
-    const allSheetNames = new Set([
-      ...Object.keys(oldDataMap),
-      ...Object.keys(newDataMap),
-    ]);
-
-    allSheetNames.forEach((sheetName) => {
-      const oldRows = oldDataMap[sheetName] || [];
-      const newRows = newDataMap[sheetName] || [];
-
-      if (oldRows.length > 0 || newRows.length > 0) {
-        // Define Header with placeholders for DA/PA/SS
-        const finalRows = [["Domain", "Full URL", "DA", "PA", "SS", "Status"]];
-
-        // Add Old Data (Preserve whatever columns they had)
-        if (oldRows.length > 0) {
-          oldRows.forEach((r) => finalRows.push(r));
-        }
-
-        // INSERT GAP
-        if (oldRows.length > 0 && newRows.length > 0) {
-          finalRows.push(["", "", "", "", "", ""]);
-        }
-
-        // Add New Data
-        if (newRows.length > 0) {
-          newRows.forEach((r) => finalRows.push(r));
-        }
-
-        const worksheet = XLSX.utils.aoa_to_sheet(finalRows);
-
-        // -- FEATURE: Column Widths --
-        // Set Cols A and B to width 35. Others to default.
-        worksheet["!cols"] = [
-          { wch: 35 }, // A (Domain)
-          { wch: 35 }, // B (URL)
-          { wch: 10 }, // C (DA)
-          { wch: 10 }, // D (PA)
-          { wch: 10 }, // E (SS)
-          { wch: 10 }, // F (Status/New)
-        ];
-
-        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-        hasData = true;
       }
-    });
 
-    if (!hasData && totalNewLinks === 0) {
-      if (Object.keys(masterSheetData).length > 0) {
-        // Just saving master data back
-      } else {
-        updateStatus("No new unique links found.", "#d9534f");
-        setTimeout(() => {
-          document.getElementById("__gbOverlay").remove();
-        }, 3000);
+      // 2. Process NEW Links
+      let totalNewLinks = 0;
+
+      links.forEach((a) => {
+        try {
+          const url = a.href.trim();
+          const fullObj = new URL(url);
+          let host = fullObj.hostname.replace(/^www\./, "").toLowerCase();
+          let path = (fullObj.pathname + fullObj.search).toLowerCase();
+
+          // Filters
+          if (BLACKLIST.some((blocked) => host.endsWith(blocked))) return;
+          if (EXCLUSION_SET.has(host)) return;
+          if ((fullObj.pathname === "/" || fullObj.pathname === "") && fullObj.search === "") return;
+          
+          const domainParts = host.split(".");
+          if (domainParts.length > 2 && host.includes("blog")) return;
+          if (uniqueDomains.has(host)) return;
+
+          uniqueDomains.add(host);
+          totalNewLinks++;
+
+          // Categorization
+          let targetCat = "Other";
+          for (const [catName, patterns] of Object.entries(CATEGORIES)) {
+            if (patterns.some((p) => path.includes(p.toLowerCase()))) {
+              targetCat = catName;
+              break;
+            }
+          }
+
+          // Add to NEW bucket [Domain, URL, DA, PA, SS, Status]
+          newDataMap[targetCat].push([host, url, "", "", "", "New"]);
+        } catch (e) {
+          // invalid url ignored
+        }
+      });
+
+      // --- EXCEL GENERATION ---
+      if (typeof XLSX === 'undefined') {
+        alert("XLSX Library not found. Please reload.");
         return;
       }
+
+      const workbook = XLSX.utils.book_new();
+
+      // -- FEATURE: Updated Report Sheet (Preserved & Fixed) --
+      const reportRows = [
+        ["Guestbook Extraction Report", new Date().toLocaleString()],
+        ["", "", "", ""],
+        ["Category", "Previous Links", "New Links", "Total Database"]
+      ];
+      
+      let grandTotalOld = 0;
+      let grandTotalNew = 0;
+
+      Object.keys(CATEGORIES).forEach((cat) => {
+        const oldCt = oldDataMap[cat] ? oldDataMap[cat].length : 0;
+        const newCt = newDataMap[cat] ? newDataMap[cat].length : 0;
+        
+        if (oldCt > 0 || newCt > 0) {
+          reportRows.push([cat, oldCt, newCt, oldCt + newCt]);
+          grandTotalOld += oldCt;
+          grandTotalNew += newCt;
+        }
+      });
+
+      // Add Grand Totals
+      reportRows.push(["", "", "", ""]);
+      reportRows.push(["TOTALS", grandTotalOld, grandTotalNew, grandTotalOld + grandTotalNew]);
+
+      // Create Report Sheet
+      const reportSheet = XLSX.utils.aoa_to_sheet(reportRows);
+      reportSheet["!cols"] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(workbook, reportSheet, "Extraction Report");
+
+      // -- MERGING & DATA SHEETS --
+      let hasData = false;
+      const allSheetNames = Object.keys(CATEGORIES); 
+
+      allSheetNames.forEach((sheetName) => {
+        const oldRows = oldDataMap[sheetName] || [];
+        const newRows = newDataMap[sheetName] || [];
+
+        if (oldRows.length > 0 || newRows.length > 0) {
+          // Define Header
+          const finalRows = [["Domain", "Full URL", "DA", "PA", "SS", "Status"]];
+
+          // Add Old Data
+          if (oldRows.length > 0) {
+            oldRows.forEach((r) => finalRows.push(r));
+          }
+
+          // INSERT SEPARATOR IF MERGING
+          if (oldRows.length > 0 && newRows.length > 0) {
+            finalRows.push(["--- NEW DATA BELOW ---", "", "", "", "", ""]);
+          }
+
+          // Add New Data
+          if (newRows.length > 0) {
+            newRows.forEach((r) => finalRows.push(r));
+          }
+
+          const worksheet = XLSX.utils.aoa_to_sheet(finalRows);
+          // Set nice column widths
+          worksheet["!cols"] = [
+            { wch: 30 }, { wch: 40 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 15 }
+          ];
+
+          XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+          hasData = true;
+        }
+      });
+
+      if (!hasData) {
+          updateStatus("No new unique links found.", "#d9534f");
+          setTimeout(() => { 
+            const ov = document.getElementById("__gbOverlay");
+            if(ov) ov.remove(); 
+          }, 3000);
+          return;
+      }
+
+      XLSX.writeFile(workbook, "Guestbook_Smart_DB.xlsx");
+
+      updateStatus(`Success! +${totalNewLinks} New Links.`, "#00e676");
+      setTimeout(() => {
+        const ov = document.getElementById("__gbOverlay");
+        if (ov) ov.remove();
+      }, 5000);
+
+    } catch(err) {
+      console.error(err);
+      alert("Error during processing: " + err.message);
+      updateStatus("Error Occurred", "red");
     }
-
-    XLSX.writeFile(workbook, "Guestbook_Smart_DB.xlsx");
-
-    updateStatus(`Success! +${totalNewLinks} New Links.`, "#00e676");
-    setTimeout(() => {
-      const ov = document.getElementById("__gbOverlay");
-      if (ov) ov.remove();
-    }, 5000);
   }
 
   updateStatus("Probing Network...");
